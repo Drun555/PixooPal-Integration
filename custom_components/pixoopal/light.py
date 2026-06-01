@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from math import ceil
 from typing import Any
 
@@ -59,15 +60,25 @@ class PixooPalBrightnessLight(PixooPalEntity, LightEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the Pixoo screen on and optionally set brightness."""
 
+        settings: dict[str, Any] = {"LightSwitch": 1}
+        commands = []
         if ATTR_BRIGHTNESS in kwargs:
             brightness = ceil(brightness_to_value(PIXOO_BRIGHTNESS_SCALE, kwargs[ATTR_BRIGHTNESS]))
-            await self.coordinator.client.set_brightness(brightness)
+            commands.append(self.coordinator.client.set_brightness(brightness))
+            settings["Brightness"] = brightness
 
-        await self.coordinator.client.set_screen(True)
-        await self.coordinator.async_request_refresh()
+        if self.is_on is not True:
+            commands.append(self.coordinator.client.set_screen(True))
+
+        if commands:
+            await asyncio.gather(*commands)
+
+        self.coordinator.async_update_settings(settings)
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the Pixoo screen off."""
 
         await self.coordinator.client.set_screen(False)
-        await self.coordinator.async_request_refresh()
+        self.coordinator.async_update_settings({"LightSwitch": 0})
+        self.async_write_ha_state()

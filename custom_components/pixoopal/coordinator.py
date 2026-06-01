@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from datetime import timedelta
 import logging
@@ -22,6 +23,7 @@ class PixooPalData:
 
     status: dict[str, Any]
     clockfaces: dict[str, Any]
+    control: dict[str, Any]
 
 
 class PixooPalCoordinator(DataUpdateCoordinator[PixooPalData]):
@@ -42,12 +44,15 @@ class PixooPalCoordinator(DataUpdateCoordinator[PixooPalData]):
         """Fetch current PixooPal state."""
 
         try:
-            status = await self.client.status()
-            clockfaces = await self.client.clockfaces()
+            status, clockfaces, control = await asyncio.gather(
+                self.client.status(),
+                self.client.clockfaces(),
+                self.client.control(),
+            )
         except PixooPalError as err:
             raise UpdateFailed(str(err)) from err
 
-        return PixooPalData(status=status, clockfaces=clockfaces)
+        return PixooPalData(status=status, clockfaces=clockfaces, control=control)
 
     @property
     def reachable(self) -> bool:
@@ -63,3 +68,46 @@ class PixooPalCoordinator(DataUpdateCoordinator[PixooPalData]):
             return {}
         settings = self.data.status.get("settings")
         return settings if isinstance(settings, dict) else {}
+
+    @property
+    def pixoo_pal_paused(self) -> bool | None:
+        """Return whether PixooPal is paused."""
+
+        if not self.data:
+            return None
+        value = self.data.control.get("pixooPalOff")
+        return bool(value) if isinstance(value, bool) else None
+
+    def async_update_settings(self, changes: dict[str, Any]) -> None:
+        """Optimistically update cached Pixoo settings after a successful command."""
+
+        if not self.data:
+            return
+
+        status = dict(self.data.status)
+        settings = dict(self.settings)
+        settings.update(changes)
+        status["settings"] = settings
+        self.async_set_updated_data(
+            PixooPalData(
+                status=status,
+                clockfaces=self.data.clockfaces,
+                control=self.data.control,
+            )
+        )
+
+    def async_update_control(self, changes: dict[str, Any]) -> None:
+        """Optimistically update cached PixooPal control state after a successful command."""
+
+        if not self.data:
+            return
+
+        control = dict(self.data.control)
+        control.update(changes)
+        self.async_set_updated_data(
+            PixooPalData(
+                status=self.data.status,
+                clockfaces=self.data.clockfaces,
+                control=control,
+            )
+        )

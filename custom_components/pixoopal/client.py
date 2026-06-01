@@ -77,6 +77,11 @@ class PixooPalClient:
 
         return await self._request_json("GET", "/api/v1/status")
 
+    async def discovery(self) -> dict[str, Any]:
+        """Fetch PixooPal discovery metadata."""
+
+        return await self._request_json("GET", "/api/v1/discovery")
+
     async def pixoo(self) -> dict[str, Any]:
         """Fetch Pixoo device state through PixooPal."""
 
@@ -86,6 +91,18 @@ class PixooPalClient:
         """Fetch clockface list and active clockface."""
 
         return await self._request_json("GET", "/api/v1/clockfaces")
+
+    async def control(self) -> dict[str, Any]:
+        """Fetch PixooPal control state."""
+
+        return await self._request_json("GET", "/api/v1/control")
+
+    async def set_pixoo_pal_paused(self, paused: bool) -> dict[str, Any]:
+        """Pause or resume PixooPal."""
+
+        return await self._request_json(
+            "POST", "/api/v1/control", json={"pixooPalOff": paused}
+        )
 
     async def set_clockface(self, clockface_id: str) -> dict[str, Any]:
         """Set the active clockface."""

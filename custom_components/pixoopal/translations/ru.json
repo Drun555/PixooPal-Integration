@@ -8,6 +8,10 @@
           "host": "Хост или URL",
           "port": "Порт"
         }
+      },
+      "zeroconf_confirm": {
+        "title": "Настроить {name}",
+        "description": "Подтвердите добавление сервера PixooPal на {host}:{port}."
       }
     },
     "error": {
@@ -16,7 +20,8 @@
       "unknown": "Неожиданная ошибка PixooPal"
     },
     "abort": {
-      "already_configured": "Этот сервер PixooPal уже настроен"
+      "already_configured": "Этот сервер PixooPal уже настроен",
+      "cannot_connect": "Не удалось подтвердить обнаруженный сервер PixooPal"
     }
   }
 }

@@ -12,7 +12,7 @@ CONF_BASE_URL: Final = "base_url"
 CONF_HOST: Final = "host"
 CONF_PORT: Final = "port"
 
-PLATFORMS: Final = ["camera", "light", "notify", "select"]
+PLATFORMS: Final = ["camera", "light", "notify", "select", "switch"]
 
 PROXY_URL: Final = "/api/pixoopal"
 
