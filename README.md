@@ -5,6 +5,7 @@ Home Assistant integration for PixooPal WebUI. It provides next entities to have
 - `select.pixoopal_clockface`
 - `light.pixoopal_display`
 - `notify.pixoopal_notify`
+- `switch.pixoopal_pause_pixoopal`
 
 ## Install
 

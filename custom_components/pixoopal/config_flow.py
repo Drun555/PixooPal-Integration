@@ -8,6 +8,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 from .client import (
@@ -81,8 +82,48 @@ class PixooPalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
         return await self.async_step_zeroconf_confirm()
 
+    async def async_step_hassio(
+        self, discovery_info: HassioServiceInfo
+    ) -> config_entries.ConfigFlowResult:
+        """Handle PixooPal discovered through a Home Assistant add-on."""
+
+        try:
+            config = discovery_info.config
+            normalized = normalize_base_url(str(config[CONF_HOST]), config[CONF_PORT])
+            discovery = await self._async_confirm_instance(normalized, use_discovery=True)
+        except (
+            KeyError,
+            PixooPalCannotConnect,
+            PixooPalError,
+            TypeError,
+            ValueError,
+        ):
+            return self.async_abort(reason="cannot_connect")
+
+        self._discovered_config = normalized
+        self.context["title_placeholders"] = {
+            "name": str(discovery.get("name") or discovery_info.name or "PixooPal"),
+            "host": normalized.host,
+            "port": str(normalized.port),
+        }
+        return await self.async_step_hassio_confirm()
+
     async def async_step_zeroconf_confirm(
         self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Confirm a discovered PixooPal instance."""
+
+        return await self._async_confirm_discovered("zeroconf_confirm", user_input)
+
+    async def async_step_hassio_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Confirm a PixooPal instance discovered through a Home Assistant add-on."""
+
+        return await self._async_confirm_discovered("hassio_confirm", user_input)
+
+    async def _async_confirm_discovered(
+        self, step_id: str, user_input: dict[str, Any] | None
     ) -> config_entries.ConfigFlowResult:
         """Confirm a discovered PixooPal instance."""
 
@@ -93,7 +134,7 @@ class PixooPalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self._async_create_pixoopal_entry(self._discovered_config)
 
         return self.async_show_form(
-            step_id="zeroconf_confirm",
+            step_id=step_id,
             data_schema=vol.Schema({}),
             description_placeholders={
                 "host": self._discovered_config.host,
