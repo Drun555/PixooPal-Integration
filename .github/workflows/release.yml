@@ -1,0 +1,34 @@
+name: Create Automated Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check manifest version
+        shell: bash
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          manifest_version="$(jq -r '.version' custom_components/pixoopal/manifest.json)"
+
+          if [[ "$manifest_version" != "$tag_version" ]]; then
+            echo "manifest.json version ($manifest_version) does not match tag ($tag_version)."
+            exit 1
+          fi
+
+      - name: Generate and Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generateReleaseNotes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
