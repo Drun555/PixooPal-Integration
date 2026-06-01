@@ -75,8 +75,23 @@ class PixooPalCoordinator(DataUpdateCoordinator[PixooPalData]):
 
         if not self.data:
             return None
-        value = self.data.control.get("pixooPalOff")
+
+        control = self._control_state
+        value = control.get("pixooPalOff")
         return bool(value) if isinstance(value, bool) else None
+
+    @property
+    def _control_state(self) -> dict[str, Any]:
+        """Return normalized PixooPal control state."""
+
+        if not self.data:
+            return {}
+
+        control = self.data.control.get("control")
+        if isinstance(control, dict):
+            return control
+
+        return {}
 
     def async_update_settings(self, changes: dict[str, Any]) -> None:
         """Optimistically update cached Pixoo settings after a successful command."""
@@ -102,12 +117,12 @@ class PixooPalCoordinator(DataUpdateCoordinator[PixooPalData]):
         if not self.data:
             return
 
-        control = dict(self.data.control)
+        control = dict(self._control_state)
         control.update(changes)
         self.async_set_updated_data(
             PixooPalData(
                 status=self.data.status,
                 clockfaces=self.data.clockfaces,
-                control=control,
+                control={"ok": True, "control": control},
             )
         )
