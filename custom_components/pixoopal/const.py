@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Final
 
 DOMAIN: Final = "pixoopal"
-DEFAULT_PORT: Final = 3000
+DEFAULT_PORT: Final = 5173
 DEFAULT_SCAN_INTERVAL_SECONDS: Final = 15
 
 CONF_BASE_URL: Final = "base_url"

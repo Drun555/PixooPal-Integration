@@ -12,6 +12,10 @@
       "zeroconf_confirm": {
         "title": "Настроить {name}",
         "description": "Подтвердите добавление сервера PixooPal на {host}:{port}."
+      },
+      "hassio_confirm": {
+        "title": "Настроить {name}",
+        "description": "Подтвердите добавление аддона PixooPal на {host}:{port}."
       }
     },
     "error": {
