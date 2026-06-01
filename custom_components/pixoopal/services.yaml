@@ -1,0 +1,29 @@
+notify:
+  name: Notify
+  description: Show a notification overlay on Pixoo via PixooPal.
+  fields:
+    message:
+      required: true
+      selector:
+        text:
+      name: Message
+      description: Notification message text.
+    title:
+      required: false
+      selector:
+        text:
+      name: Title
+      description: Optional title prepended to the message.
+    beep:
+      required: false
+      default: false
+      selector:
+        boolean:
+      name: Beep
+      description: Play the Pixoo buzzer with the notification.
+    entry_id:
+      required: false
+      selector:
+        text:
+      name: Entry ID
+      description: PixooPal config entry ID. Only needed when multiple PixooPal entries exist.

@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect PixooPal",
+        "description": "Enter the PixooPal WebUI address. This is the PixooPal server, not the physical Pixoo device.",
+        "data": {
+          "host": "Host or URL",
+          "port": "Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to PixooPal",
+      "invalid_host": "Invalid host or port",
+      "unknown": "Unexpected PixooPal error"
+    },
+    "abort": {
+      "already_configured": "This PixooPal server is already configured"
+    }
+  }
+}

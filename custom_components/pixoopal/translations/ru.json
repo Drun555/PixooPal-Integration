@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Подключить PixooPal",
+        "description": "Введите адрес WebUI PixooPal. Это сервер PixooPal, не физическое устройство Pixoo.",
+        "data": {
+          "host": "Хост или URL",
+          "port": "Порт"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Не удалось подключиться к PixooPal",
+      "invalid_host": "Некорректный хост или порт",
+      "unknown": "Неожиданная ошибка PixooPal"
+    },
+    "abort": {
+      "already_configured": "Этот сервер PixooPal уже настроен"
+    }
+  }
+}
