@@ -147,6 +147,22 @@ class PixooPalClient:
             "POST", "/api/v1/notify", json={"message": message, "beep": beep}
         )
 
+    async def home_assistant_handshake(
+        self, entry_id: str, render_path: str, render_url: str | None = None
+    ) -> dict[str, Any]:
+        """Register Home Assistant template rendering with PixooPal."""
+
+        payload: dict[str, Any] = {
+            "entryId": entry_id,
+            "renderPath": render_path,
+        }
+        if render_url:
+            payload["renderUrl"] = render_url
+
+        return await self._request_json(
+            "POST", "/api/v1/home-assistant/handshake", json=payload
+        )
+
     async def camera_image(self) -> bytes | None:
         """Fetch a still JPEG preview if PixooPal has one."""
 

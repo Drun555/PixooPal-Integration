@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
+from contextlib import suppress
+import logging
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
@@ -10,10 +13,10 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .client import PixooPalClient
+from .client import PixooPalClient, PixooPalError
 from .const import CONF_BASE_URL, DOMAIN, PLATFORMS
 from .coordinator import PixooPalCoordinator
-from .http import PixooPalEntriesView, PixooPalProxyView
+from .http import PixooPalEntriesView, PixooPalProxyView, PixooPalTemplateRenderView
 
 type PixooPalConfigEntry = ConfigEntry[PixooPalCoordinator]
 
@@ -32,12 +35,16 @@ NOTIFY_SERVICE_SCHEMA = vol.Schema(
     }
 )
 
+_LOGGER = logging.getLogger(__name__)
+TEMPLATE_HANDSHAKE_INTERVAL_SECONDS = 60
+
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up integration-level HTTP resources."""
 
     hass.http.register_view(PixooPalEntriesView)
     hass.http.register_view(PixooPalProxyView)
+    hass.http.register_view(PixooPalTemplateRenderView)
 
     async def async_handle_notify(call: ServiceCall) -> None:
         """Handle the PixooPal notify action."""
@@ -83,6 +90,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: PixooPalConfigEntry) -> 
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = coordinator
+    handshake_task = hass.async_create_task(
+        _async_home_assistant_template_handshake_loop(entry, coordinator)
+    )
+    entry.async_on_unload(handshake_task.cancel)
     await hass.config_entries.async_forward_entry_setups(
         entry, [Platform(platform) for platform in PLATFORMS]
     )
@@ -95,3 +106,26 @@ async def async_unload_entry(hass: HomeAssistant, entry: PixooPalConfigEntry) ->
     return await hass.config_entries.async_unload_platforms(
         entry, [Platform(platform) for platform in PLATFORMS]
     )
+
+
+async def _async_register_home_assistant_template_render(
+    entry: PixooPalConfigEntry, coordinator: PixooPalCoordinator
+) -> None:
+    """Tell PixooPal Core where Home Assistant templates can be rendered."""
+
+    render_path = f"/api/pixoopal/{entry.entry_id}/template/render"
+    try:
+        await coordinator.client.home_assistant_handshake(entry.entry_id, render_path)
+    except PixooPalError as err:
+        _LOGGER.warning("Could not register Home Assistant template rendering with PixooPal: %s", err)
+
+
+async def _async_home_assistant_template_handshake_loop(
+    entry: PixooPalConfigEntry, coordinator: PixooPalCoordinator
+) -> None:
+    """Keep Home Assistant template rendering registered with PixooPal Core."""
+
+    with suppress(asyncio.CancelledError):
+        while True:
+            await _async_register_home_assistant_template_render(entry, coordinator)
+            await asyncio.sleep(TEMPLATE_HANDSHAKE_INTERVAL_SECONDS)
