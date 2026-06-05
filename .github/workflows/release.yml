@@ -1,6 +1,7 @@
 name: Create Automated Release
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -13,17 +14,50 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Check manifest version
+      - name: Sync manifest version
         shell: bash
         run: |
+          set -euo pipefail
+
           tag_version="${GITHUB_REF_NAME#v}"
+          tag_commit="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
+          manifest_file="custom_components/pixoopal/manifest.json"
+          manifest_changed="$(git diff-tree --no-commit-id --name-only -r "$tag_commit" | grep -Fx "$manifest_file" || true)"
           manifest_version="$(jq -r '.version' custom_components/pixoopal/manifest.json)"
 
-          if [[ "$manifest_version" != "$tag_version" ]]; then
-            echo "manifest.json version ($manifest_version) does not match tag ($tag_version)."
+          if [[ "$manifest_version" == "$tag_version" ]]; then
+            echo "manifest.json already matches tag $GITHUB_REF_NAME."
+            exit 0
+          fi
+
+          if [[ -n "$manifest_changed" ]]; then
+            echo "manifest.json was changed in the tagged commit, but its version ($manifest_version) does not match tag ($tag_version)."
             exit 1
           fi
+
+          echo "manifest.json was not changed in the tagged commit; bumping version from $manifest_version to $tag_version."
+          tmp_file="$(mktemp)"
+          jq --arg version "$tag_version" '.version = $version' "$manifest_file" > "$tmp_file"
+          mv "$tmp_file" "$manifest_file"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$manifest_file"
+          git commit -m "chore: bump integration manifest to $tag_version"
+          default_branch="${{ github.event.repository.default_branch }}"
+          git fetch origin "+refs/heads/$default_branch:refs/remotes/origin/$default_branch"
+
+          if [[ "$(git rev-parse "origin/$default_branch")" == "$tag_commit" ]]; then
+            git push origin "HEAD:refs/heads/$default_branch" || echo "Could not push manifest bump to $default_branch; continuing with tag update only."
+          else
+            echo "Default branch moved after the tag was created; leaving branch unchanged."
+          fi
+
+          git tag -f "$GITHUB_REF_NAME"
+          git push --force origin "refs/tags/$GITHUB_REF_NAME"
 
       - name: Generate and Create GitHub Release
         uses: ncipollo/release-action@v1
