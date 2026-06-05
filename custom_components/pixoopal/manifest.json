@@ -3,11 +3,16 @@
   "name": "PixooPal",
   "codeowners": [],
   "config_flow": true,
-  "dependencies": ["http", "zeroconf"],
+  "dependencies": [
+    "http",
+    "zeroconf"
+  ],
   "documentation": "https://github.com/yourname/PixooPal-Integration",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/yourname/PixooPal-Integration/issues",
   "requirements": [],
-  "version": "1.2.4",
-  "zeroconf": ["_pixoopal._tcp.local."]
+  "version": "1.2.6",
+  "zeroconf": [
+    "_pixoopal._tcp.local."
+  ]
 }
