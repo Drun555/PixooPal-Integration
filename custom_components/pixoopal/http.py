@@ -5,11 +5,8 @@ from __future__ import annotations
 from aiohttp import FormData, web
 
 from homeassistant.components.http import HomeAssistantView
-from homeassistant.helpers.template import Template
 
 from .const import DOMAIN, PROXY_URL
-
-RENDER_TOKEN_HEADER = "x-pixoopal-render-token"
 
 
 class PixooPalEntriesView(HomeAssistantView):
@@ -106,46 +103,3 @@ class PixooPalProxyView(HomeAssistantView):
                 if key.lower() in {"content-type", "cache-control"}
             }
             return web.Response(body=body, status=response.status, headers=proxied_headers)
-
-
-class PixooPalTemplateRenderView(HomeAssistantView):
-    """Render Home Assistant Jinja templates for a connected PixooPal Core."""
-
-    url = f"{PROXY_URL}/{{entry_id}}/template/render"
-    name = "api:pixoopal:template_render"
-    requires_auth = False
-
-    async def post(self, request: web.Request, entry_id: str) -> web.Response:
-        """Render a template string inside Home Assistant."""
-
-        hass = request.app["hass"]
-        entry = hass.config_entries.async_get_entry(entry_id)
-
-        if entry is None or entry.domain != DOMAIN:
-            raise web.HTTPNotFound(text="PixooPal entry was not found")
-
-        coordinator = entry.runtime_data
-        if request.headers.get(RENDER_TOKEN_HEADER) != coordinator.template_render_token:
-            raise web.HTTPUnauthorized(text="Invalid PixooPal render token")
-
-        try:
-            payload = await request.json()
-        except ValueError as err:
-            raise web.HTTPBadRequest(text="Request body must be JSON") from err
-
-        template_string = payload.get("template") if isinstance(payload, dict) else None
-        variables = payload.get("variables", {}) if isinstance(payload, dict) else {}
-
-        if not isinstance(template_string, str):
-            raise web.HTTPBadRequest(text="Template is required")
-
-        if not isinstance(variables, dict):
-            variables = {}
-
-        try:
-            template = Template(template_string, hass)
-            result = template.async_render(variables=variables, parse_result=False)
-        except Exception as err:
-            return web.json_response({"ok": False, "message": str(err)}, status=500)
-
-        return web.json_response({"ok": True, "result": str(result)})

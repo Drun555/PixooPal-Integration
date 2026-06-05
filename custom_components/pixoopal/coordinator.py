@@ -6,7 +6,6 @@ import asyncio
 from dataclasses import dataclass
 from datetime import timedelta
 import logging
-from secrets import token_urlsafe
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -40,7 +39,6 @@ class PixooPalCoordinator(DataUpdateCoordinator[PixooPalData]):
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL_SECONDS),
         )
         self.client = client
-        self.template_render_token = token_urlsafe(32)
 
     async def _async_update_data(self) -> PixooPalData:
         """Fetch current PixooPal state."""
