@@ -9,6 +9,8 @@ from homeassistant.helpers.template import Template
 
 from .const import DOMAIN, PROXY_URL
 
+RENDER_TOKEN_HEADER = "x-pixoopal-render-token"
+
 
 class PixooPalEntriesView(HomeAssistantView):
     """Expose PixooPal config entries for the Lovelace card."""
@@ -111,7 +113,7 @@ class PixooPalTemplateRenderView(HomeAssistantView):
 
     url = f"{PROXY_URL}/{{entry_id}}/template/render"
     name = "api:pixoopal:template_render"
-    requires_auth = True
+    requires_auth = False
 
     async def post(self, request: web.Request, entry_id: str) -> web.Response:
         """Render a template string inside Home Assistant."""
@@ -121,6 +123,10 @@ class PixooPalTemplateRenderView(HomeAssistantView):
 
         if entry is None or entry.domain != DOMAIN:
             raise web.HTTPNotFound(text="PixooPal entry was not found")
+
+        coordinator = entry.runtime_data
+        if request.headers.get(RENDER_TOKEN_HEADER) != coordinator.template_render_token:
+            raise web.HTTPUnauthorized(text="Invalid PixooPal render token")
 
         try:
             payload = await request.json()

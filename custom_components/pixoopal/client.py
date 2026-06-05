@@ -148,7 +148,11 @@ class PixooPalClient:
         )
 
     async def home_assistant_handshake(
-        self, entry_id: str, render_path: str, render_url: str | None = None
+        self,
+        entry_id: str,
+        render_path: str,
+        render_url: str | None = None,
+        render_token: str | None = None,
     ) -> dict[str, Any]:
         """Register Home Assistant template rendering with PixooPal."""
 
@@ -158,6 +162,8 @@ class PixooPalClient:
         }
         if render_url:
             payload["renderUrl"] = render_url
+        if render_token:
+            payload["renderToken"] = render_token
 
         return await self._request_json(
             "POST", "/api/v1/home-assistant/handshake", json=payload
