@@ -42,13 +42,13 @@ class PixooPalPauseSwitch(PixooPalEntity, SwitchEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Pause PixooPal."""
 
-        await self.coordinator.client.set_pixoo_pal_paused(True)
+        await self.async_call_client(self.coordinator.client.set_pixoo_pal_paused(True))
         self.coordinator.async_update_control({"pixooPalOff": True})
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Resume PixooPal."""
 
-        await self.coordinator.client.set_pixoo_pal_paused(False)
+        await self.async_call_client(self.coordinator.client.set_pixoo_pal_paused(False))
         self.coordinator.async_update_control({"pixooPalOff": False})
         self.async_write_ha_state()

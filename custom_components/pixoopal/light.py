@@ -71,7 +71,7 @@ class PixooPalBrightnessLight(PixooPalEntity, LightEntity):
             commands.append(self.coordinator.client.set_screen(True))
 
         if commands:
-            await asyncio.gather(*commands)
+            await self.async_call_client(asyncio.gather(*commands))
 
         self.coordinator.async_update_settings(settings)
         self.async_write_ha_state()
@@ -79,6 +79,6 @@ class PixooPalBrightnessLight(PixooPalEntity, LightEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the Pixoo screen off."""
 
-        await self.coordinator.client.set_screen(False)
+        await self.async_call_client(self.coordinator.client.set_screen(False))
         self.coordinator.async_update_settings({"LightSwitch": 0})
         self.async_write_ha_state()

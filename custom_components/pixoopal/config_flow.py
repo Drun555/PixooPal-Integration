@@ -20,6 +20,8 @@ from .client import (
 )
 from .const import CONF_BASE_URL, CONF_HOST, CONF_PORT, DEFAULT_PORT, DOMAIN
 
+DISCOVERED_CONFIG_KEY = "discovered_config"
+
 
 class PixooPalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a PixooPal config flow."""
@@ -34,6 +36,7 @@ class PixooPalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle the initial step."""
 
         errors: dict[str, str] = {}
+        default_config = self._get_discovered_config()
 
         if user_input is not None:
             try:
@@ -54,12 +57,7 @@ class PixooPalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_HOST): str,
-                    vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
-                }
-            ),
+            data_schema=self._user_schema(default_config),
             errors=errors,
         )
 
@@ -75,6 +73,7 @@ class PixooPalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="cannot_connect")
 
         self._discovered_config = normalized
+        self._set_discovered_config(normalized)
         self.context["title_placeholders"] = {
             "name": str(discovery.get("name") or discovery_info.name or "PixooPal"),
             "host": normalized.host,
@@ -101,6 +100,7 @@ class PixooPalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="cannot_connect")
 
         self._discovered_config = normalized
+        self._set_discovered_config(normalized)
         self.context["title_placeholders"] = {
             "name": str(discovery.get("name") or discovery_info.name or "PixooPal"),
             "host": normalized.host,
@@ -166,3 +166,37 @@ class PixooPalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_PORT: config.port,
             },
         )
+
+    def _user_schema(self, default_config: PixooPalConfig | None) -> vol.Schema:
+        """Return the manual setup form schema with discovered defaults when available."""
+
+        host_field = (
+            vol.Required(CONF_HOST, default=default_config.host)
+            if default_config
+            else vol.Required(CONF_HOST)
+        )
+
+        return vol.Schema(
+            {
+                host_field: str,
+                vol.Optional(
+                    CONF_PORT,
+                    default=default_config.port if default_config else DEFAULT_PORT,
+                ): int,
+            }
+        )
+
+    def _get_discovered_config(self) -> PixooPalConfig | None:
+        """Return the latest auto-discovered PixooPal config for form defaults."""
+
+        data = self.hass.data.get(DOMAIN)
+        if not isinstance(data, dict):
+            return None
+
+        config = data.get(DISCOVERED_CONFIG_KEY)
+        return config if isinstance(config, PixooPalConfig) else None
+
+    def _set_discovered_config(self, config: PixooPalConfig) -> None:
+        """Remember the latest auto-discovered PixooPal config for manual setup."""
+
+        self.hass.data.setdefault(DOMAIN, {})[DISCOVERED_CONFIG_KEY] = config

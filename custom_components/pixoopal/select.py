@@ -58,7 +58,7 @@ class PixooPalClockfaceSelect(PixooPalEntity, SelectEntity):
         if clockface_id is None:
             return
 
-        await self.coordinator.client.set_clockface(clockface_id)
+        await self.async_call_client(self.coordinator.client.set_clockface(clockface_id))
         await self.coordinator.async_request_refresh()
 
     def _label_id_pairs(self) -> list[tuple[str, str]]:

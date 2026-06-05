@@ -14,7 +14,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .client import PixooPalClient, PixooPalError
-from .const import CONF_BASE_URL, DOMAIN, PLATFORMS
+from .const import CONF_BASE_URL, DOMAIN, LEGACY_PLATFORMS_FOR_UNLOAD, PLATFORMS
 from .coordinator import PixooPalCoordinator
 from .http import PixooPalEntriesView, PixooPalProxyView, PixooPalTemplateRenderView
 
@@ -70,7 +70,11 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         message = call.data[ATTR_MESSAGE]
         text = f"{title}: {message}" if title else message
 
-        await coordinator.client.notify(text, call.data[ATTR_BEEP])
+        try:
+            await coordinator.client.notify(text, call.data[ATTR_BEEP])
+        except PixooPalError as err:
+            raise HomeAssistantError(f"PixooPal is unavailable: {err}") from err
+
         await coordinator.async_request_refresh()
 
     hass.services.async_register(
@@ -104,7 +108,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: PixooPalConfigEntry) ->
     """Unload a PixooPal config entry."""
 
     return await hass.config_entries.async_unload_platforms(
-        entry, [Platform(platform) for platform in PLATFORMS]
+        entry,
+        [
+            Platform(platform)
+            for platform in [*PLATFORMS, *LEGACY_PLATFORMS_FOR_UNLOAD]
+        ],
     )
 
 

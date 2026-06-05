@@ -12,7 +12,8 @@ CONF_BASE_URL: Final = "base_url"
 CONF_HOST: Final = "host"
 CONF_PORT: Final = "port"
 
-PLATFORMS: Final = ["camera", "light", "notify", "select", "switch"]
+PLATFORMS: Final = ["camera", "light", "select", "switch"]
+LEGACY_PLATFORMS_FOR_UNLOAD: Final = ["notify"]
 
 PROXY_URL: Final = "/api/pixoopal"
 
